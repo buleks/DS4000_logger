@@ -47,7 +47,7 @@ def main():
     filename = generateFileName()
 
     # rigol.getPNG(path_to_save+filename)
-    # rigol.getCSV(path_to_save+filename)
+    rigol.get_csv(path_to_save+filename)
     print(rigol.getRMS(2))
 
 if __name__== "__main__":

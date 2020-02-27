@@ -33,7 +33,7 @@ class ds4000:
         im.save(fileName, "PNG")
         print("Saved file:", "'" + fileName)
 
-    def getCSV(self,file_path):
+    def get_csv(self, file_path):
         # Scan for displayed channels
         chanList = []
         for channel in ["CHAN1", "CHAN2", "CHAN3", "CHAN4"]:
@@ -46,20 +46,28 @@ class ds4000:
         self.instr.write(":STOP")
         self.instr.write(":WAV:MODE RAW")
 
+        xincrement = float(self.instr.ask(":WAVeform:XINCrement?"))
+        memoryDepth = self.instr.ask(":ACQuire:MDEPth?")
 
+        time_axis =  list(map(float, range(0, 10, 1)))
+        time_axis = [x * xincrement for x in time_axis]
+
+        all_channels_data = []
         for channel in chanList:
             self.instr.write(":WAV:SOUR " + channel)
             self.instr.write(":WAV:FORM ASC")
 
-            memoryDepth = self.instr.ask(":ACQuire:MDEPth?")
+
             self.instr.write(":WAVeform:STARt 1")
             self.instr.write(":WAVeform:POINts " + "10")
-            data  = self.instr.ask(":WAV:DATA?")
+            data = self.instr.ask(":WAV:DATA?")
 
-            xincrement = self.instr.ask(":WAVeform:XINCrement?")
+            all_channels_data.append([float(i) for i in data.split(',')[:-1]])
+        all_channels_data.append(time_axis)
+        print(list(zip(*all_channels_data)))
 
-            print(xincrement)
-            print(data)
+
+
 
 
     def getChannelConfig(self,file_path):
@@ -70,10 +78,10 @@ class ds4000:
 
     def getRMS(self,channel):
         channels = ['CHAN1','CHAN2','CHAN3','CHAN4']
-        command1 = ":MEASure:PVRMs "+channels[channel]
-        command2 = ":MEASure:PVRMs? "+channels[channel]
+        command1 = ":MEASure:VRMs "+channels[channel]
+        command2 = ":MEASure:VRMs? "+channels[channel]
         self.instr.write(command1)
-        return self.instr.ask(command2)
+        return float(self.instr.ask(command2))
 
 
 
