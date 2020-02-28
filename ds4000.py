@@ -2,6 +2,11 @@ import vxi11
 import sys
 from PIL import Image
 import io
+import csv
+
+
+
+
 
 class ds4000:
     def __init__(self,ip_address):
@@ -10,7 +15,7 @@ class ds4000:
 
 
 
-    def getPNG(self,file_path):
+    def getPNG(self, file_path):
         self.instr.write(":DISP:DATA?")
         imagebuf = self.instr.read_raw(-1)
 
@@ -29,42 +34,50 @@ class ds4000:
         imagebuf= imagebuf[headerLen:-1]
 
         im = Image.open(io.BytesIO(imagebuf))
-        fileName = file_path + "." + "PNG"
-        im.save(fileName, "PNG")
-        print("Saved file:", "'" + fileName)
+        file_name = file_path + "." + "PNG"
+        im.save(file_name, "PNG")
+        print("Saved file:", "'" + file_name)
 
     def get_csv(self, file_path):
         # Scan for displayed channels
-        chanList = []
+        chan_list = []
         for channel in ["CHAN1", "CHAN2", "CHAN3", "CHAN4"]:
             command = ":" + channel + ":DISP?"
             response = self.instr.ask(command )
             if response == '1':
-                chanList += [channel]
-        print("Active channels:",chanList)
+                chan_list += [channel]
+        # print("Active channels:", chan_list)
 
         self.instr.write(":STOP")
-        self.instr.write(":WAV:MODE RAW")
+        self.instr.write(":WAV:MODE NORM")
 
         xincrement = float(self.instr.ask(":WAVeform:XINCrement?"))
         memoryDepth = self.instr.ask(":ACQuire:MDEPth?")
 
-        time_axis =  list(map(float, range(0, 10, 1)))
+        time_axis = list(map(float, range(0, int(memoryDepth), 1)))
         time_axis = [x * xincrement for x in time_axis]
 
         all_channels_data = []
-        for channel in chanList:
+        for channel in chan_list:
             self.instr.write(":WAV:SOUR " + channel)
             self.instr.write(":WAV:FORM ASC")
 
-
             self.instr.write(":WAVeform:STARt 1")
-            self.instr.write(":WAVeform:POINts " + "10")
+            self.instr.write(":WAVeform:POINts " + memoryDepth)
+            # print(self.instr.ask(":WAVeform:POINts?"))
             data = self.instr.ask(":WAV:DATA?")
-
             all_channels_data.append([float(i) for i in data.split(',')[:-1]])
-        all_channels_data.append(time_axis)
-        print(list(zip(*all_channels_data)))
+        all_channels_data.insert(0,time_axis)
+        zipped_data = list(zip(*all_channels_data))
+
+        file_name = file_path+".csv"
+
+        with open(file_name, "w") as csvfile:
+            writer = csv.writer(csvfile, delimiter=',')
+            chan_list.insert(0, "TIME")
+            writer.writerow(chan_list)
+            writer.writerows(zipped_data)
+        print("Saved file:", "'" + file_name)
 
 
 
