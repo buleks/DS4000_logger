@@ -38,6 +38,33 @@ class ds4000:
         im.save(file_name, "PNG")
         print("Saved file:", "'" + file_name)
 
+    def get_fft_csv(self, file_path):
+        fft_enabled = self.instr.ask(":CALCulate:MODE?")
+        if fft_enabled == "FFT":
+            self.instr.write(":WAV:SOUR FFT")
+            self.instr.write(":WAV:FORM ASC")
+
+            xincrement = float(self.instr.ask(":WAVeform:XINCrement?"))
+            memoryDepth = self.instr.ask(":ACQuire:MDEPth?")
+            self.instr.write(":WAVeform:STARt 1")
+            self.instr.write(":WAVeform:POINts " + memoryDepth)
+            data = self.instr.ask(":WAV:DATA?")
+            float_data = [float(i) for i in data.split(',')[:-1]]
+
+            time_axis = list(map(float, range(0, int(memoryDepth), 1)))
+            time_axis = [x * xincrement for x in time_axis]
+
+            fft_data = [float_data, time_axis]
+            zipped_data = list(zip(*fft_data))
+
+            file_name = file_path + "fft.csv"
+
+            with open(file_name, "w") as csvfile:
+                writer = csv.writer(csvfile, delimiter=',')
+                writer.writerow("FFT data, FFT x axis[Hz]")
+                writer.writerows(zipped_data)
+            print("Saved file:", "'" + file_name)
+
     def get_csv(self, file_path):
         # Scan for displayed channels
         chan_list = []
@@ -67,7 +94,7 @@ class ds4000:
             # print(self.instr.ask(":WAVeform:POINts?"))
             data = self.instr.ask(":WAV:DATA?")
             all_channels_data.append([float(i) for i in data.split(',')[:-1]])
-        all_channels_data.insert(0,time_axis)
+        all_channels_data.insert(0, time_axis)
         zipped_data = list(zip(*all_channels_data))
 
         file_name = file_path+".csv"

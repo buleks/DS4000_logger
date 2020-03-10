@@ -7,7 +7,7 @@ from pynput.keyboard import Key, Listener
 import signal
 
 path_to_save = "output/"
-IP_RIGOL = "192.168.1.120"
+IP_RIGOL = "192.168.1.17"
 
 def generateFileName():
     timestamp = time.strftime("%Y-%m-%d_%H_%M_%S", time.localtime())
@@ -80,6 +80,7 @@ def main():
             filename = generateFileName()
             rigol.getPNG(path_to_save + filename)
             rigol.get_csv(path_to_save + filename)
+            rigol.get_fft_csv(path_to_save + filename)
             print("Ready.")
             gather_data = False
 
